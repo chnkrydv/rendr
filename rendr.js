@@ -1,18 +1,6 @@
-const stack = {
-  scriptArr: [],
-  push: function(script) {
-    this.scriptArr.push(script)
-  },
-  pop: function() {
-    let last = this.scriptArr.length - 1;
-    eval(this.scriptArr[last]);
-    this.scriptArr.pop();
-  }
-}
-
 const html = `
   <div>
-    <input type="text" placeholder="input your name here" />
+    <input />
     <p>want to see the magic</p>
     <ul>
       <li>something here as usual</li>
@@ -25,51 +13,140 @@ const html = `
 
 function render() {
   let el = document.createElement('div');
-  let ul = document.createElement('ul');
-
-  [...Array(4).keys()].forEach( (key) => {
-    let li = document.createElement('li');
-    li.innerText = 'item: ' + key;
-    ul.appendChild(li);
+  let input = createHtmlElement('input', null, {
+    type: 'text',
+    placeholder: 'Enter your name',
+    style: 'background-color: yellow;'
   });
 
-  console.log(html);
+  let button = createHtmlElement('button', 'click here', {
+    style: 'background-color: blue; color: white; border: 1px solid black;'
+  });
+  let div = createHtmlElement('div', [input, button], {
+    style: 'background-color: #ddd; height: 100px; width: 200px;'
+  });
 
+  el.appendChild(div);
+  // el.appendChild(button);
 
-
-  el.appendChild(ul);
   return el;
 }
 
 function htmlToDOM(html) {
-  let dom;
+  let dom = document.createElement('p');
   let charBuffer = html.split('');
   let lastChar = '';
+
   let elStart = false;
   let childChar = false;
   let elEnd = false;
 
-  charBuffer.forEach( char => {
-    if(char === ' ') return;
+  let elName = '';
+  let elements = [];
 
+  let iteration = 0;
+
+  charBuffer.forEach( char => {
     let combo = lastChar + char;
+
+    if(combo === '  ') {
+      return;
+    }
+    
 
     if(lastChar === '<' && combo !== '</') {
       elStart = true;
-    }
-    if(char === '>' && combo !== '/>') {
-      elStart = false;
-    }
-    if(lastChar === '<' && combo === '</') {
-      elEnd = true;
-    }
-    if(char === '>' && combo === '/>') {
-      elStart = false;
       childChar = false;
       elEnd = false;      
     }
-    
+    if(char === '>' && combo !== '/>') {
+      if(elEnd) {
+        elStart = false;
+        childChar = false;
+        elEnd = false;
+      } else {
+        elStart = false;
+        childChar = true;
+        elEnd = false; 
+      
+        console.log(++iteration, 'childChar')
+        console.log(elName);
+        elements.push(elName.trim());
+        elName = '';
+      }
+    }
+    if(lastChar === '<' && combo === '</') {
+      elStart = false;
+      childChar = false;
+      elEnd = true;
+    }
+
+    if(char === '>' && combo === '/>') {
+      elStart = false;
+      childChar = false;
+      elEnd = false;   
+      
+      console.log(++iteration, 'elEnd')
+
+      if(elName.length) {
+        console.log(elName);
+        elements.push(elName.trim());
+        elName = '';   
+      }
+    }
+
+    if(elStart) {
+      char !== '/' ? elName += char : null;
+    }
+      
+    // dom.innerText = 'element name: ' + elName;
     lastChar = char;
-  })
+  });
+      
+  elements.forEach( el => {
+    let elem = document.createElement(el);
+    
+    if(el === 'input') elem.value = el;
+    else elem.innerText = el;
+
+    dom.appendChild(elem);
+  });
+
+  console.log(elements);
+
   return dom;
+}
+
+function createHtmlElement(tagName, child, attributes) {
+  let el = document.createElement(tagName);
+
+  if(child instanceof HTMLElement) {
+    el.appendChild(child);
+  } else if(typeof child === 'string') {
+    el.innerText = child;
+  } else if(Array.isArray(child)) {
+    child.forEach( elem => {
+      if(elem instanceof HTMLElement) el.appendChild(elem);
+    })
+  }
+
+  if(attributes) {
+    for (let key in attributes) {
+      el.setAttribute(key, attributes[key]);
+    }
+  }
+
+  return el;
+}
+
+const Stack = {
+  scriptArr: [],
+  push: function(script) {
+    this.scriptArr.push(script)
+  },
+  pop: function() {
+    let last = this.scriptArr.length - 1;
+    eval(this.scriptArr[last]);
+    this.scriptArr.pop();
+  }
 }
